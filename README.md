@@ -1,5 +1,7 @@
 # word2vec
  CSE 582 HW
+ 
+The vectors.bin file was too large. The file can be downloaded from here [Google Drive Download](https://drive.google.com/file/d/1tFiJTMCdbCTgiwX-Gi4WHa47tvKgPdUk/view?usp=share_link)
 # Answers to Questions: 
 - How does CBOW compose context embeddings?
   - It randomly initializes the context embedding or syn0 vector. This is a projection vector layer that converts to a dense embedding vector
