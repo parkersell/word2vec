@@ -12,4 +12,4 @@ done
 
 gcc word2vec.c -o word2vec -lm -pthread -O3 -march=native -funroll-loops
 
-./word2vec -train data-phrase2.txt -output vectors.bin -cbow 1 -size 500 -window 10 -negative 10 -hs 0 -sample 1e-5 -threads 40 -binary 1 -iter 3 -min-count 10
+./word2vec -train "/mnt/d/Spring 2023 Big Files/data.txt" -output vectors.bin -cbow 1 -size 500 -window 10 -negative 10 -hs 0 -sample 1e-5 -threads 40 -binary 1 -iter 3 -min-count 10

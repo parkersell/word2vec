@@ -418,22 +418,27 @@ void *TrainModelThread(void *id) {
     for (c = 0; c < layer1_size; c++) neu1[c] = 0;
     for (c = 0; c < layer1_size; c++) neu1e[c] = 0;
     next_random = next_random * (unsigned long long)25214903917 + 11;
-    b = next_random % window;
-    if (cbow) {  //train the cbow architecture
+    b = next_random % window; // window is 5 or set in command line
+    if (cbow) {  //train the cbow architecture // here is the code for cbow
       // in -> hidden
       cw = 0;
-      for (a = b; a < window * 2 + 1 - b; a++) if (a != window) {
-        c = sentence_position - window + a;
-        if (c < 0) continue;
-        if (c >= sentence_length) continue;
-        last_word = sen[c];
+      // this for loop iterates through every other word 
+      for (a = b; a < window * 2 + 1 - b; a++) if (a != window) { 
+        c = sentence_position - window + a; // gets all len(window) words before the current word 
+        if (c < 0) continue; // if it is less than 0 or outside the start of the sentence skip
+        if (c >= sentence_length) continue; // if it is greater than length of sentence skip
+        last_word = sen[c]; //otherwise set to value in sentence
         if (last_word == -1) continue;
-        for (c = 0; c < layer1_size; c++) neu1[c] += syn0[c + last_word * layer1_size];
+        for (c = 0; c < layer1_size; c++) neu1[c] += syn0[c + last_word * layer1_size]; 
+        // for every value in the layer_size we set the layer weights of neul equal to the 
+        ///sum of all the values of that word in syn0 
+        // syn0 is initially random weights then updated at the end of the cbow part
         cw++;
       }
       if (cw) {
-        for (c = 0; c < layer1_size; c++) neu1[c] /= cw;
-        if (hs) for (d = 0; d < vocab[word].codelen; d++) {
+        for (c = 0; c < layer1_size; c++) neu1[c] /= cw; 
+        // normalize the weights by taking division by number of words iterated over
+        if (hs) for (d = 0; d < vocab[word].codelen; d++) { // apply softmax if specified 
           f = 0;
           l2 = vocab[word].point[d] * layer1_size;
           // Propagate hidden -> output
@@ -453,21 +458,24 @@ void *TrainModelThread(void *id) {
           if (d == 0) {
             target = word;
             label = 1;
-          } else {
+          } else { //randomly selecting all the other words that are not correct
             next_random = next_random * (unsigned long long)25214903917 + 11;
-            target = table[(next_random >> 16) % table_size];
+            target = table[(next_random >> 16) % table_size]; // this is the word probabilities 
             if (target == 0) target = next_random % (vocab_size - 1) + 1;
             if (target == word) continue;
-            label = 0;
-          }
-          l2 = target * layer1_size;
+            label = 0; // sets them equal to 0 since in the most probable case, they are not related to target word
+          } 
+          l2 = target * layer1_size; // location of target word
           f = 0;
-          for (c = 0; c < layer1_size; c++) f += neu1[c] * syn1neg[c + l2];
-          if (f > MAX_EXP) g = (label - 1) * alpha;
+
+          // this part is important
+          for (c = 0; c < layer1_size; c++) f += neu1[c] * syn1neg[c + l2]; // gets the value of the target words output vector
+          // g is the output from softmax applied here
+          if (f > MAX_EXP) g = (label - 1) * alpha; // if f is > max exp set to 0 for target value, but set o -alpha if word is dissimilar
           else if (f < -MAX_EXP) g = (label - 0) * alpha;
           else g = (label - expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * alpha;
-          for (c = 0; c < layer1_size; c++) neu1e[c] += g * syn1neg[c + l2];
-          for (c = 0; c < layer1_size; c++) syn1neg[c + l2] += g * neu1[c];
+          for (c = 0; c < layer1_size; c++) neu1e[c] += g * syn1neg[c + l2]; // updates the hidden layer of the softmax applied nuerons
+          for (c = 0; c < layer1_size; c++) syn1neg[c + l2] += g * neu1[c]; 
         }
         // hidden -> in
         for (a = b; a < window * 2 + 1 - b; a++) if (a != window) {
@@ -476,7 +484,7 @@ void *TrainModelThread(void *id) {
           if (c >= sentence_length) continue;
           last_word = sen[c];
           if (last_word == -1) continue;
-          for (c = 0; c < layer1_size; c++) syn0[c + last_word * layer1_size] += neu1e[c];
+          for (c = 0; c < layer1_size; c++) syn0[c + last_word * layer1_size] += neu1e[c]; // we now set the weights equal to neu1
         }
       }
     } else {  //train skip-gram
